@@ -3,7 +3,12 @@ package Log::Log4perl::Appender::Chunk::Store::Memory;
 use Moose;
 extends qw/Log::Log4perl::Appender::Chunk::Store/;
 
+use Log::Log4perl;
+
+my $LOGGER = Log::Log4perl->get_logger();
+
 has 'chunks' => ( is => 'rw' , isa => 'HashRef[Str]' , default => sub{ {}; });
+
 
 sub clear{
   my ($self) = @_;
@@ -12,6 +17,7 @@ sub clear{
 
 sub store{
   my ($self, $chunk_id, $big_message) = @_;
+  $LOGGER->trace("Storing chunk ".$chunk_id);
   $self->chunks()->{$chunk_id} = $big_message;
 }
 

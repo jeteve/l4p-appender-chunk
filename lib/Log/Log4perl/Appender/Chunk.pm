@@ -56,18 +56,24 @@ sub _full_store_class{
 sub log{
     my ($self, %params) = @_;
 
+    ## Any log within this method will be discarded.
+    if( Log::Log4perl::MDC->get(__PACKAGE__.'-reentrance') ){
+      return;
+    }
+    Log::Log4perl::MDC->put(__PACKAGE__.'-reentrance', 1);
 
     my $chunk = Log::Log4perl::MDC->get($self->chunk_marker());
 
     # Change the state according to the chunk param
-    $self->{state} = $self->_compute_state($chunk);
+    $self->state( $self->_compute_state($chunk) );
 
-    # Act according to the state
+    # Act according to the state.
     my $m_name = '_on_'.$self->state();
 
     $self->$m_name(\%params);
 
     $self->_set_previous_chunk($chunk);
+    Log::Log4perl::MDC->put(__PACKAGE__.'-reentrance', undef);
 }
 
 sub _on_OFFCHUNK{
