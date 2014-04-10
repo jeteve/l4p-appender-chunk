@@ -1,29 +1,40 @@
-use strict;
-use warnings;
 package Log::Log4perl::Appender::Chunk;
+use Moose;
 
 use Carp;
 use Data::Dumper;
 use Log::Log4perl::MDC;
 
-sub new{
-    my ($class, %options) = @_;
+# State variables:
+has 'state' => ( is => 'rw' , isa => 'Str', default => 'OFFCHUNK' );
+has 'previous_chunk' => ( is => 'rw' , isa => 'Maybe[Str]' , default => undef , writer => '_set_previous_chunk' );
+has 'messages_buffer' => ( is => 'rw' , isa => 'ArrayRef[Str]' , default => sub{ []; });
 
-    my $self = {
-                state => 'OFFCHUNK',
-                previous_chunk => undef,
-                messages_buffer => [],
-                chunk_marker => 'chunk',
-                %options
-               };
-    bless $self, $class;
-    return $self;
-}
+# Settings:
+has 'chunk_marker' => ( is => 'ro' , isa => 'Str', required => 1, default => 'chunk' );
+
+
+# sub new{
+#     my ($class, %options) = @_;
+
+#     my $self = {
+#                 state => 'OFFCHUNK',
+#                 previous_chunk => undef,
+#                 messages_buffer => [],
+#                 chunk_marker => 'chunk',
+#                 store_class => 'Memory',
+#                 store_args => {},
+#                 %options
+#                };
+#     warn Dumper($self);
+#     bless $self, $class;
+#     return $self;
+# }
 
 sub log{
     my ($self, %params) = @_;
 
-    my $chunk = Log::Log4perl::MDC->get($self->{chunk_marker});
+    my $chunk = Log::Log4perl::MDC->get($self->chunk_marker());
 
     # warn "CHUNK: $chunk";
     # warn Dumper(\%params);
@@ -32,11 +43,11 @@ sub log{
     $self->{state} = $self->_compute_state($chunk);
 
     # Act according to the state
-    my $m_name = '_on_'.$self->{state};
+    my $m_name = '_on_'.$self->state();
 
     $self->$m_name(\%params);
 
-    $self->{previous_chunk} = $chunk;
+    $self->_set_previous_chunk($chunk);
 }
 
 sub _on_OFFCHUNK{
@@ -103,7 +114,7 @@ sub _compute_state{
     confess("UNKNOWN CASE. This should never be reached.");
 }
 
-1;
+__PACKAGE__->meta->make_immutable();
 
 __END__
 
