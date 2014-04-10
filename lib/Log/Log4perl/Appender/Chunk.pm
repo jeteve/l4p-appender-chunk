@@ -53,23 +53,6 @@ sub _full_store_class{
 }
 
 
-# sub new{
-#     my ($class, %options) = @_;
-
-#     my $self = {
-#                 state => 'OFFCHUNK',
-#                 previous_chunk => undef,
-#                 messages_buffer => [],
-#                 chunk_marker => 'chunk',
-#                 store_class => 'Memory',
-#                 store_args => {},
-#                 %options
-#                };
-#     warn Dumper($self);
-#     bless $self, $class;
-#     return $self;
-# }
-
 sub log{
     my ($self, %params) = @_;
 
@@ -108,30 +91,45 @@ sub _on_INCHUNK{
 
 sub _on_NEWCHUNK{
     my ($self, $params) = @_;
-    # Same an on_LEAVECHUNK really
+    # Leave the chunk
     $self->_on_LEAVECHUNK($params);
+    # And we are entering the new one.
+    $self->_on_INCHUNK($params);
 }
 
 sub _on_LEAVECHUNK{
-    my ($self, $params) = @_;
-    # The new message should not be pushed on the buffer.
+    my ($self) = @_;
+
+    # The new message should not be pushed on the buffer,
+    # As we left a chunk for no chunk.
 
     # Flush the buffer in one big message.
     my $big_message = join('',@{$self->{messages_buffer}});
-    $self->{messages_buffer} = [];
+    $self->messages_buffer( [] );
 
     # The chunk ID is in the previous chunk. This should NEVER be null
-    my $chunk_id = $self->{previous_chunk};
+    my $chunk_id = $self->previous_chunk();
     unless( defined $chunk_id ){
-        confess("Undefined previous chunk. This should never happen");
+        confess("Undefined previous chunk. This should never happen. Dont know where to put the big message:$big_message");
     }
 
     $self->store->store($chunk_id, $big_message);
 }
 
+
+sub DEMOLISH{
+    my ($self) = @_;
+    if( my $chunk_id = $self->previous_chunk() ){
+        # Simulate transitioning to an non chunked section of the log.
+        Log::Log4perl::MDC->put($self->chunk_marker() , undef );
+        # Output an empty log.
+        $self->log();
+    }
+}
+
 sub _compute_state{
     my ($self, $chunk) = @_;
-    my $previous_chunk = $self->{previous_chunk};
+    my $previous_chunk = $self->previous_chunk();
 
     if( defined $chunk ){
         if( defined $previous_chunk ){
