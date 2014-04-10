@@ -21,5 +21,8 @@ L<Log::Log4perl::Appender::Chunk> appender.
 
 =head1 IMPLEMENTING YOUR OWN
 
+Make a subclass of this and implement the 'store' method.
+
+Have a look at the minimalistic code in L<Log::Log4perl::Appender::Chunk::Store::Memory>.
 
 =cut

@@ -119,7 +119,8 @@ sub store{
     if( $kid ){
         return 1;
     }
-
+    # Detach this child. Avoid zombies
+    setsid();
     # We are the kid.
     $self = $self->clone();
 

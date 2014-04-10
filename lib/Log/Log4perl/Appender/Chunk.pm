@@ -56,10 +56,8 @@ sub _full_store_class{
 sub log{
     my ($self, %params) = @_;
 
-    my $chunk = Log::Log4perl::MDC->get($self->chunk_marker());
 
-    # warn "CHUNK: $chunk";
-    # warn Dumper(\%params);
+    my $chunk = Log::Log4perl::MDC->get($self->chunk_marker());
 
     # Change the state according to the chunk param
     $self->{state} = $self->_compute_state($chunk);
@@ -184,14 +182,24 @@ recording chunks and fetch them to the storage when the key 'chunk' is unset or 
 
 =head1 SYNOPSIS
 
-Basic usage (with built-in store S3)
+=head2 with build-in store Memory
+
+  log4perl.rootLogger=TRACE, Chunk
+
+  log4perl.appender.Chunk=Log::Log4perl::Appender::Chunk
+
+  # Built-in store class S3
+  log4perl.appender.Chunk.store_class=Memory
+
+  # Etc..
+  log4perl.appender.Chunk.layout=..
+
+
+=head2 With built-in store S3
 
 log4perl.conf:
 
   log4perl.rootLogger=TRACE, Chunk
-
-  layout_class=Log::Log4perl::Layout::PatternLayout
-  layout_pattern=%m%n
 
   log4perl.appender.Chunk=Log::Log4perl::Appender::Chunk
 
@@ -209,9 +217,8 @@ log4perl.conf:
   log4perl.appender.Chunk.store_args.expires_in_days=3
   log4perl.appender.Chunk.store_args.acl_short=public-read
 
-  # The layout.
-  log4perl.appender.Chunk.layout=${layout_class}
-  log4perl.appender.Chunk.layout.ConversionPattern=${layout_pattern}
+  # Etc..
+  log4perl.appender.Chunk.layout=...
 
 Anywhere in your code:
 
@@ -224,5 +231,14 @@ Anywhere in your code:
   # This will trigget the storage of the whole chunk of log lines under
   # the key 'Your-Log-Chunk-Unique-ID-Key' in the configured storage.
 
+=head2 log
+
+L<Log::Log4perl::Appender> framework method.
+
+=head2 store
+
+The instance of L<Log::Log4perl::Appender::Chunk::Store> this logger used.
+
+It's usually configured 
 
 =cut
