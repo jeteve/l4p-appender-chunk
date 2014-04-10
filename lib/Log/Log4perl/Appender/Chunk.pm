@@ -243,7 +243,7 @@ L<Log::Log4perl::Appender> framework method.
 
 =head2 store
 
-The instance of L<Log::Log4perl::Appender::Chunk::Store> this logger used.
+The instance of L<Log::Log4perl::Appender::Chunk::Store> this logger uses.
 
 It's usually configured from the Log4perl configuration file as shown in the SYNOPSIS, but
 you can also inject it from your application code:
