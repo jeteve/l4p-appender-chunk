@@ -6,6 +6,8 @@ extends qw/Log::Log4perl::Appender::Chunk::Store/;
 use Net::Amazon::S3;
 use Net::Amazon::S3::Client;
 
+use DateTime;
+
 use Log::Log4perl;
 my $LOGGER = Log::Log4perl->get_logger();
 
@@ -24,6 +26,15 @@ has 'bucket_name' => ( is => 'ro' , isa => 'Str' , required => 1);
 has 'aws_access_key_id' => ( is => 'ro' , isa => 'Str', required => 1 );
 has 'aws_secret_access_key' => ( is => 'ro' , isa => 'Str' , required => 1);
 has 'retry' => ( is => 'ro' , isa => 'Bool' , required => 1 , default => 1);
+
+
+# Single object properties.
+
+# Short access list name
+has 'acl_short' => ( is => 'ro' , isa => 'Maybe[Str]', default => undef );
+
+# Expires in this amount of days.
+has 'expires_in_days' => ( is => 'ro' , isa => 'Maybe[Int]' , default => undef );
 
 has 'vivify_bucket' => ( is => 'ro' , isa => 'Bool' , required => 1 , default => 0 );
 
@@ -53,6 +64,8 @@ sub clone{
                              aws_access_key_id => $self->aws_access_key_id(),
                              aws_secret_access_key => $self->aws_secret_access_key(),
                              retry => $self->retry(),
+                             acl_short => $self->acl_short(),
+                             expires_in_days => $self->expires_in_days(),
                              vivify_bucket => $self->vivify_bucket()
                             });
 }
@@ -79,6 +92,14 @@ sub _build_bucket{
     return $self->s3_client()->create_bucket( name => $bucket_name );
 }
 
+sub _expiry_ymd{
+    my ($self) = @_;
+    unless( $self->expires_in_days() ){
+        return undef;
+    }
+    return DateTime->now()->add( days => $self->expires_in_days() )->ymd();
+}
+
 =head2 store
 
 See superclass L<Log::Log4perl::Appender::Chunk::Store>
@@ -88,8 +109,15 @@ See superclass L<Log::Log4perl::Appender::Chunk::Store>
 sub store{
     my ($self, $chunk_id, $big_message) = @_;
 
-    my $s3object = $self->bucket()->object( key => $chunk_id );
+    my $expires_ymd = $self->_expiry_ymd();
+    my $s3object = $self->bucket()->object( key => $chunk_id,
+                                            content_type => 'text/plain',
+                                            $self->acl_short() ? ( acl_short => $self->acl_short() ) : (),
+                                            $expires_ymd ? ( expires => $expires_ymd ) : (),
+                                          );
     $s3object->put($big_message);
+
+    $LOGGER->info("Created S3 object: ".$s3object->uri());
     return 1;
 }
 
