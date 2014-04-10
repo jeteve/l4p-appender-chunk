@@ -2,3 +2,6 @@
 **~
 # Demo files
 demo/
+
+# Build files
+Log-Log4perl-Appender-Chunk-*
