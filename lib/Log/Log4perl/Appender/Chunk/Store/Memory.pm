@@ -28,9 +28,11 @@ __END__
 
 =head1 NAME
 
-Log::Log4perl::Appender::Chunk::Store::Memory - Stores chunk in memory
+Log::Log4perl::Appender::Chunk::Store::Memory - Stores chunks in memory
 
 =head1 SYNOPSIS
+
+Fist make sure you read L<Log::Log4perl::Appender::Chunk> documentation.
 
 l4p.conf:
 
