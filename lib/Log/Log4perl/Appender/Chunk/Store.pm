@@ -25,4 +25,16 @@ Make a subclass of this and implement the 'store' method.
 
 Have a look at the minimalistic code in L<Log::Log4perl::Appender::Chunk::Store::Memory>.
 
+=head2 store
+
+This method will be called by the L<Log::Log4perl::Appender::Chunk> to store a whole chunk of log lines
+under the given chunk ID.
+
+Implement it in any subclass like:
+
+  sub store{
+     my ($self, $chunk_id, $chunk) = @_;
+     ...
+  }
+
 =cut

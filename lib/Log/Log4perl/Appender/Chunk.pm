@@ -239,6 +239,14 @@ L<Log::Log4perl::Appender> framework method.
 
 The instance of L<Log::Log4perl::Appender::Chunk::Store> this logger used.
 
-It's usually configured 
+It's usually configured from the Log4perl configuration file as shown in the SYNOPSIS, but
+you can also inject it from your application code:
+
+  Log::Log4perl->appender_by_name('Chunk')->store($your_instance_of_storage);
+
+=head2 DEMOLISH
+
+Will attempt to store whatever is left in the buffer if your program
+finishes before it could output any log file outside a Chunk capturing section.
 
 =cut
