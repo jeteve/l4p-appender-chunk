@@ -44,6 +44,27 @@ Log::Log4perl::MDC->put('chunk', undef);
 $LOGGER->info("Outside context again");
 is( $ca->state() , 'LEAVECHUNK');
 
+Log::Log4perl::MDC->put('chunk', '0001');
+$LOGGER->info("Inside another chunk");
+is( $ca->state() , 'ENTERCHUNK');
+
+$LOGGER->info("Inside another chunk again");
+is( $ca->state() , 'INCHUNK');
+
+
+Log::Log4perl::MDC->put('chunk' , '0002' );
+$LOGGER->info("Inside a brand new chunk");
+is( $ca->state() , 'NEWCHUNK');
+
+$LOGGER->info("Inside a brand new chunk again");
+is( $ca->state() , 'INCHUNK');
+Log::Log4perl::MDC->put('chunk' , undef );
+$LOGGER->info("Left chunk context");
+is( $ca->state() , 'LEAVECHUNK');
+
+$LOGGER->info("Left chunk context again");
+is( $ca->state() , 'OFFCHUNK');
+
 ok(1);
 
 done_testing();

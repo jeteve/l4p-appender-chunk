@@ -106,6 +106,12 @@ sub _on_INCHUNK{
     push @{$self->messages_buffer()} , $params->{message};
 }
 
+sub _on_NEWCHUNK{
+    my ($self, $params) = @_;
+    # Same an on_LEAVECHUNK really
+    $self->_on_LEAVECHUNK($params);
+}
+
 sub _on_LEAVECHUNK{
     my ($self, $params) = @_;
     # The new message should not be pushed on the buffer.
