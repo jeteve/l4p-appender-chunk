@@ -2,8 +2,10 @@ package Log::Log4perl::Appender::Chunk;
 use Moose;
 
 use Carp;
+use Class::Load;
 use Data::Dumper;
 use Log::Log4perl::MDC;
+
 
 # State variables:
 has 'state' => ( is => 'rw' , isa => 'Str', default => 'OFFCHUNK' );
@@ -12,6 +14,36 @@ has 'messages_buffer' => ( is => 'rw' , isa => 'ArrayRef[Str]' , default => sub{
 
 # Settings:
 has 'chunk_marker' => ( is => 'ro' , isa => 'Str', required => 1, default => 'chunk' );
+
+# Store:
+has 'store' => ( is => 'ro', isa => 'Log::Log4perl::Appender::Chunk::Store',
+                 required => 1, lazy_build => 1);
+has 'store_class' => ( is => 'ro' , isa => 'Str' , default => 'Null' );
+has 'store_args'  => ( is => 'ro' , isa => 'HashRef' , default => sub{ {}; });
+
+has 'store_builder' => ( is => 'ro' , isa => 'CodeRef', required => 1, default => sub{
+                             my ($self) = @_;
+                             sub{
+                                 $self->_full_store_class()->new($self->store_args());
+                             }
+                         });
+
+sub _build_store{
+    my ($self) = @_;
+    return $self->store_builder()->();
+}
+
+sub _full_store_class{
+    my ($self) = @_;
+    my $full_class = $self->store_class();
+    if( $full_class =~ /^\+/ ){
+        $full_class =~ s/^\+//;
+    }else{
+        $full_class = 'Log::Log4perl::Appender::Chunk::Store::'.$full_class;
+    }
+    Class::Load::load_class($full_class);
+    return $full_class;
+}
 
 
 # sub new{
@@ -81,7 +113,7 @@ sub _on_OUTCHUNK{
         confess("Undefined previous chunk. This should never happen");
     }
 
-    warn "WILL EMIT as chunk_id=$chunk_id: $big_message";
+    $self->store->store($chunk_id, $big_message);
 }
 
 sub _compute_state{
