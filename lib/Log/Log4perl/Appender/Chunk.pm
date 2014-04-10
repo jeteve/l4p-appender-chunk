@@ -234,7 +234,7 @@ Anywhere in your code:
   #  .. Use Log4perl just as usual ..
 
   Log::Log4perl::MDC->put('chunk',undef);
-  # This will trigget the storage of the whole chunk of log lines under
+  # This will trigger the storage of the whole chunk of log lines under
   # the key 'Your-Log-Chunk-Unique-ID-Key' in the configured storage.
 
 =head2 log
