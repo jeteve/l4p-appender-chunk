@@ -49,8 +49,9 @@ Test buckets will be prefixed with JETEVE-FullMetalBucket-
 
 /, 2 ;
     }
-    ok( my $bucket = $store->bucket() );
+    # This forks.
     ok( $store->store('a_key' , 'Some big content'), "Ok can store stuff");
+    ok( my $bucket = $store->bucket() );
 
     # Do some cleanup:
     if( $bucket ){

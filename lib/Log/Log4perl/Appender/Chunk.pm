@@ -112,7 +112,6 @@ sub _on_LEAVECHUNK{
     unless( defined $chunk_id ){
         confess("Undefined previous chunk. This should never happen. Dont know where to put the big message:$big_message");
     }
-
     $self->store->store($chunk_id, $big_message);
 }
 

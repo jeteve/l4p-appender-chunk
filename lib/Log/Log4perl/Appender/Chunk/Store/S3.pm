@@ -3,13 +3,18 @@ package Log::Log4perl::Appender::Chunk::Store::S3;
 use Moose;
 extends qw/Log::Log4perl::Appender::Chunk::Store/;
 
+
+use Carp;
+
 use Net::Amazon::S3;
 use Net::Amazon::S3::Client;
+
+# To detach child processes.
+use POSIX 'setsid';
 
 use DateTime;
 
 use Log::Log4perl;
-my $LOGGER = Log::Log4perl->get_logger();
 
 sub BEGIN{
     eval "require Net::Amazon::S3::Client;";
@@ -88,7 +93,6 @@ sub _build_bucket{
     unless( $self->vivify_bucket() ){
         confess("Could not find bucket ".$bucket_name." in this account [access_key_id='".$self->aws_access_key_id()."'] and no vivify_bucket option");
     }
-    $LOGGER->info("Vivifying Amazon S3 bucket '".$bucket_name."' for S3 account [access_key_id='".$self->aws_access_key_id()."']");
     return $self->s3_client()->create_bucket( name => $bucket_name );
 }
 
@@ -109,6 +113,16 @@ See superclass L<Log::Log4perl::Appender::Chunk::Store>
 sub store{
     my ($self, $chunk_id, $big_message) = @_;
 
+
+    defined(my $kid = fork()) or confess("Cannot fork: $!");
+
+    if( $kid ){
+        return 1;
+    }
+
+    # We are the kid.
+    $self = $self->clone();
+
     my $expires_ymd = $self->_expiry_ymd();
     my $s3object = $self->bucket()->object( key => $chunk_id,
                                             content_type => 'text/plain',
@@ -116,9 +130,7 @@ sub store{
                                             $expires_ymd ? ( expires => $expires_ymd ) : (),
                                           );
     $s3object->put($big_message);
-
-    $LOGGER->info("Created S3 object: ".$s3object->uri());
-    return 1;
+    exit(0);
 }
 
 __PACKAGE__->meta->make_immutable();
