@@ -163,6 +163,67 @@ __END__
 
 =head1 NAME
 
-Log::Log4perl::Appender::Chunk - Group log messages in chunks
+Log::Log4perl::Appender::Chunk - Group log messages in Identified chunks
+
+=head1 DESCRIPTION
+
+This appender will write group of Log lines (chunks) to the underlying store under
+an ID that you choose.
+
+A number of Store classes are shipped ( in Log::Log4perl::Appender::Chunk::Store::* ),
+but it's very easy to write your own store, as it's essentially a Key/Value storage.
+
+See L<Log::Log4perl::Appender::Chunk::Store> for more details.
+
+=head2 How to mark chunks of logs.
+
+Marking chunks of log rely on the Log4perl Mapped Diagnostic Context (MDC) mechanism.
+See L<Log::Log4perl::MDC>
+
+Essentially, each time you set a MDC key 'chunk' to something, this appender will start
+recording chunks and fetch them to the storage when the key 'chunk' is unset or changes.
+
+=head1 SYNOPSIS
+
+Basic usage (with built-in store S3)
+
+log4perl.conf:
+
+  log4perl.rootLogger=TRACE, Chunk
+
+  layout_class=Log::Log4perl::Layout::PatternLayout
+  layout_pattern=%m%n
+
+  log4perl.appender.Chunk=Log::Log4perl::Appender::Chunk
+
+  # Built-in store class S3
+  log4perl.appender.Chunk.store_class=S3
+  # S3 Specific Arguments:
+  log4perl.appender.Chunk.store_args.bucket_name=MyLogChunks
+  log4perl.appender.Chunk.store_args.aws_access_key_id=YourAWSAccessKey
+  log4perl.appender.Chunk.store_args.aws_secret_access_key=YourAWS
+
+  # Optional:
+  log4perl.appender.Chunk.store_args.retry=1
+  log4perl.appender.Chunk.store_args.vivify_bucket=1
+
+  log4perl.appender.Chunk.store_args.expires_in_days=3
+  log4perl.appender.Chunk.store_args.acl_short=public-read
+
+  # The layout.
+  log4perl.appender.Chunk.layout=${layout_class}
+  log4perl.appender.Chunk.layout.ConversionPattern=${layout_pattern}
+
+Anywhere in your code:
+
+
+  Log::Log4perl::MDC->put('chunk', "Your-Log-Chunk-Unique-ID-Key");
+
+  #  .. Use Log4perl just as usual ..
+
+  Log::Log4perl::MDC->put('chunk',undef);
+  # This will trigget the storage of the whole chunk of log lines under
+  # the key 'Your-Log-Chunk-Unique-ID-Key' in the configured storage.
+
 
 =cut
