@@ -20,6 +20,8 @@ ok( my $ca =  Log::Log4perl->appender_by_name('Chunk') , "Ok got Chunk appender"
 
 my $LOGGER = Log::Log4perl->get_logger();
 
+ok( $ca->store() , "Ok got store");
+
 is( $ca->state() , 'OFFCHUNK');
 
 $LOGGER->info("Something outside any context");
