@@ -8,6 +8,13 @@ use Log::Log4perl::MDC;
 
 
 # State variables:
+
+# State can be:
+# OFFCHUNK: No chunk is currently captured.
+# INCHUNK: A chunk is currently captured in the buffer
+# ENTERCHUNK: Entering a chunk from an OFFCHUNK state
+# NEWCHUNK: Entering a NEW chunk from an INCHUNK state
+# LEAVECHUNK: Leaving a chunk from an INCHUNK state
 has 'state' => ( is => 'rw' , isa => 'Str', default => 'OFFCHUNK' );
 has 'previous_chunk' => ( is => 'rw' , isa => 'Maybe[Str]' , default => undef , writer => '_set_previous_chunk' );
 has 'messages_buffer' => ( is => 'rw' , isa => 'ArrayRef[Str]' , default => sub{ []; });
@@ -90,16 +97,16 @@ sub _on_OFFCHUNK{
 sub _on_ENTERCHUNK{
     my ($self,$params) = @_;
     # Push the message in the buffer.
-    push @{$self->{messages_buffer}} , $params->{message};
+    push @{$self->messages_buffer()} , $params->{message};
 }
 
 sub _on_INCHUNK{
     my ($self, $params) = @_;
     # Push the message in the buffer.
-    push @{$self->{messages_buffer}} , $params->{message};
+    push @{$self->messages_buffer()} , $params->{message};
 }
 
-sub _on_OUTCHUNK{
+sub _on_LEAVECHUNK{
     my ($self, $params) = @_;
     # The new message should not be pushed on the buffer.
 
@@ -136,7 +143,7 @@ sub _compute_state{
     }else{
         # No chunk defined.
         if( defined $previous_chunk ){ # But a previous chunk
-            return 'OUTCHUNK';
+            return 'LEAVECHUNK';
         }else{
             # No previous chunk neither
             return 'OFFCHUNK';

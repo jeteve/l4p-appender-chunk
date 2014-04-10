@@ -16,19 +16,31 @@ log4perl.appender.Chunk.layout.ConversionPattern=${layout_pattern}
 
 Log::Log4perl::init(\$conf);
 
+ok( my $ca =  Log::Log4perl->appender_by_name('Chunk') , "Ok got Chunk appender");
+
 my $LOGGER = Log::Log4perl->get_logger();
+
+is( $ca->state() , 'OFFCHUNK');
 
 $LOGGER->info("Something outside any context");
 
 Log::Log4perl::MDC->put('chunk', '12345');
 
+is( $ca->state() , 'OFFCHUNK');
+
 $LOGGER->trace("Some trace inside the chunk");
+is( $ca->state() , 'ENTERCHUNK');
+
 $LOGGER->debug("Some debug inside the chunk");
+is( $ca->state() , 'INCHUNK');
+
 $LOGGER->info("Some info inside the chunk");
+is( $ca->state() , 'INCHUNK');
 
 Log::Log4perl::MDC->put('chunk', undef);
 
 $LOGGER->info("Outside context again");
+is( $ca->state() , 'LEAVECHUNK');
 
 ok(1);
 
