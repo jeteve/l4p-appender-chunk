@@ -1,3 +1,5 @@
+requires 'perl' , '5.010';
+
 requires 'Carp';
 requires 'Class::Load' , '>=0.20';
 requires 'DateTime';
