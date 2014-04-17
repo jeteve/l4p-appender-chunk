@@ -1,9 +1,11 @@
 package Log::Log4perl::Appender::Chunk::Store;
 use Moose;
 
+use Carp;
+
 sub store{
     my ($self, $chunk_id , $big_message) = @_;
-    ...
+    confess("Not implemented");
 }
 
 __PACKAGE__->meta->make_immutable();
