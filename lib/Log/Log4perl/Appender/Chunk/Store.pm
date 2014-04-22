@@ -3,7 +3,7 @@ use Moose;
 
 sub store{
     my ($self, $chunk_id , $big_message) = @_;
-    ...
+    die "sub 'store' is not Implemented in $self";
 }
 
 __PACKAGE__->meta->make_immutable();

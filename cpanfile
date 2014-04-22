@@ -1,4 +1,4 @@
-requires 'perl' , '5.010';
+requires 'perl' , '5.089';
 
 requires 'Carp';
 requires 'Class::Load' , '>=0.20';
