@@ -217,7 +217,7 @@ sub store{
                                           );
     $s3object->put($big_message);
     if( $self->log_auth_links() ){
-        $LOGGER->debug("Stored log chunk in ".$s3object->query_string_authentication_uri());
+        $LOGGER->info("Stored log chunk in ".$s3object->query_string_authentication_uri());
     }
     exit(0);
 }
