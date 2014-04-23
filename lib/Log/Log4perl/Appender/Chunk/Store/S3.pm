@@ -211,11 +211,11 @@ sub store{
 
     my $expires_ymd = $self->_expiry_ymd();
     my $s3object = $self->bucket()->object( key => $chunk_id,
-                                            content_type => 'text/plain',
+                                            content_type => 'text/plain; charset=utf-8',
                                             $self->acl_short() ? ( acl_short => $self->acl_short() ) : (),
                                             $expires_ymd ? ( expires => $expires_ymd ) : (),
                                           );
-    $s3object->put($big_message);
+    $s3object->put(Encode::encode_utf8($big_message));
     if( $self->log_auth_links() ){
         $LOGGER->info("Stored log chunk in ".$s3object->query_string_authentication_uri());
     }
