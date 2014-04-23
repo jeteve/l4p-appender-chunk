@@ -9,9 +9,6 @@ use Carp;
 use Net::Amazon::S3;
 use Net::Amazon::S3::Client;
 
-# To detach child processes.
-use POSIX 'setsid';
-
 use DateTime;
 
 use Log::Log4perl;
@@ -193,14 +190,23 @@ sub store{
     my ($self, $chunk_id, $big_message) = @_;
 
 
-    defined(my $kid = fork()) or confess("Cannot fork: $!");
-
-    if( $kid ){
+    defined(my $child = fork()) or confess("Cannot fork: $!");
+    if( $child ){
+        ## We are the main parent. We wait for the child.
+        waitpid($child, 0);
         return 1;
     }
-    # Detach this child. Avoid zombies
-    setsid();
-    # We are the kid.
+
+    # We are the child
+    # Double fork to avoid zombies.
+    defined( my $grand_child = fork() ) or confess("Cannot double fork: $!");
+    if( $grand_child ){
+        # We are the child but we dont wait for
+        # our grand child. It will be picked up by init
+        exit(0);
+    }
+
+    # Grand child. We can do stuff.
     $self = $self->clone();
 
     my $expires_ymd = $self->_expiry_ymd();
