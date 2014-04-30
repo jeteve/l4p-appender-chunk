@@ -1,0 +1,15 @@
+language: perl
+perl:
+  - "5.16"
+  - "5.14"
+  - "5.12"
+  - "5.10"
+  - "5.8"
+
+install:
+   - cpanm --quiet Dist::Zilla
+   - dzil authordeps | cpanm --quiet --notest
+   - cpanm --quiet --notest --installdeps .
+
+script:
+   - dzil test
