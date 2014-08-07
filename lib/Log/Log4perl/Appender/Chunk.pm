@@ -204,6 +204,7 @@ Anywhere in your code:
   Log::Log4perl::MDC->put('chunk',undef);
 
   #  .. Use Log4perl as usual ..
+  $logger->info("Blabla"); # Triggers storing the log chunk
 
 Then depending on the configured store, you will be able to retrieve your log chunks
 from different places. See below.
@@ -265,6 +266,7 @@ It's usually configured from the Log4perl configuration file as shown in the SYN
 you can also inject it from your application code:
 
   Log::Log4perl->appender_by_name('Chunk')->store($your_instance_of_storage);
+
 
 =head2 DEMOLISH
 
