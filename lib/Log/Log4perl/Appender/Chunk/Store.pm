@@ -1,6 +1,8 @@
 package Log::Log4perl::Appender::Chunk::Store;
 use Moose;
 
+use Carp;
+
 sub store{
     my ($self, $chunk_id , $big_message) = @_;
     die "sub 'store' is not Implemented in $self";
