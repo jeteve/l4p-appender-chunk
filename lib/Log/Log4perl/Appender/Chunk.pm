@@ -1,4 +1,5 @@
 package Log::Log4perl::Appender::Chunk;
+
 use Moose;
 
 use Carp;
