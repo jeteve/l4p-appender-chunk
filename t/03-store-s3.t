@@ -6,7 +6,7 @@ use Log::Log4perl;
 use Data::UUID;
 my $ug =  new Data::UUID;
 
-my $uuid = $ug->create_str();
+my $uuid = lc($ug->create_str());
 
 my $access_key_id = $ENV{AWS_ACCESS_KEY_ID} || 'A-Fake-keyID';
 my $access_key_secret = $ENV{AWS_ACCESS_KEY_SECRET} || 'A-Fake-Secret-Key';
@@ -19,7 +19,9 @@ layout_pattern=%m%n
 
 log4perl.appender.Chunk=Log::Log4perl::Appender::Chunk
 log4perl.appender.Chunk.store_class=S3
-log4perl.appender.Chunk.store_args.bucket_name=JETEVE-FullMetalBucket-|.$uuid.q|
+log4perl.appender.Chunk.store_args.bucket_name=cpan-jeteve-eu-|.$uuid.q|
+log4perl.appender.Chunk.store_args.host=s3-eu-west-1.amazonaws.com
+log4perl.appender.Chunk.store_args.location_constraint=EU
 log4perl.appender.Chunk.store_args.aws_access_key_id=|.$access_key_id.q|
 log4perl.appender.Chunk.store_args.aws_secret_access_key=|.$access_key_secret.q|
 log4perl.appender.Chunk.store_args.expires_in_days=3
@@ -38,6 +40,16 @@ ok( my $store = $ca->store() , "Ok got store for the logger");
 ok( $store->s3_client() , "Ok got s3 client");
 ok( $store->_expiry_ymd() , "Ok got expiry YMD");
 ok( $store->acl_short() , "Ok got acl_short");
+is( $store->host(), 's3-eu-west-1.amazonaws.com' );
+is( $store->location_constraint(),  'EU' );
+
+my $clone = $store->clone();
+ok( $clone->s3_client() , "Ok got s3 client");
+ok( $clone->_expiry_ymd() , "Ok got expiry YMD");
+ok( $clone->acl_short() , "Ok got acl_short");
+is( $clone->host(), 's3-eu-west-1.amazonaws.com' );
+is( $clone->location_constraint(),  'EU' );
+
 
 SKIP:{
     unless( $ENV{AMAZON_S3_EXPENSIVE_TESTS} ){

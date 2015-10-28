@@ -25,6 +25,8 @@ has 's3_client' => ( is => 'ro', isa => 'Net::Amazon::S3::Client', lazy_build =>
 has 'bucket' => ( is => 'ro' , isa => 'Net::Amazon::S3::Client::Bucket', lazy_build => 1);
 
 
+has 'host' => ( is => 'ro', isa => 'Maybe[Str]');
+has 'location_constraint' => ( is => 'ro', isa => 'Maybe[Str]');
 has 'bucket_name' => ( is => 'ro' , isa => 'Str' , required => 1);
 has 'aws_access_key_id' => ( is => 'ro' , isa => 'Str', required => 1 );
 has 'aws_secret_access_key' => ( is => 'ro' , isa => 'Str' , required => 1);
@@ -49,7 +51,8 @@ sub _build_s3_client{
                                          Net::Amazon::S3->new(
                                                               aws_access_key_id => $self->aws_access_key_id(),
                                                               aws_secret_access_key => $self->aws_secret_access_key(),
-                                                              retry => $self->retry()
+                                                              retry => $self->retry(),
+                                                              ( $self->host() ? ( host => $self->host() ) : () )
                                                              ));
 }
 
@@ -78,6 +81,24 @@ See L<Log::Log4perl::Appender::Chunk>'s synopsis for a more complete example.
 =item bucket_name
 
 Mandatory. Name of the Amazon S3 bucket to store the log chunks.
+
+=item location_constraint
+
+Optional. If your current Net::Amazon::S3 supports it, you can use that to set the location constraint
+of the vivified bucket. See L<Net::Amazon::S3#add_bucket> for more info on supported constraints.
+
+Note that if you specify a location constraint, you will have to follow Amazon's recommendation about
+naming your bucket. See L<http://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html> for restriction
+about bucket names. In Particular, if you are outside the US, you will not be able to have upper case characters
+in your bucket name.
+
+=item host
+
+Optional. If the bucket you are using is not in the USA, and depending on the version of L<Net::Amazon::S3> you
+have, you might want to set that to a different host, according to
+L<http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region>
+
+See <Net::Amazon::S3#new>
 
 =item aws_access_key_id
 
@@ -148,6 +169,8 @@ sub clone{
                              expires_in_days => $self->expires_in_days(),
                              vivify_bucket => $self->vivify_bucket(),
                              log_auth_links => $self->log_auth_links(),
+                             host => $self->host(),
+                             location_constraint => $self->location_constraint()
                             });
 }
 
@@ -169,7 +192,9 @@ sub _build_bucket{
     unless( $self->vivify_bucket() ){
         confess("Could not find bucket ".$bucket_name." in this account [access_key_id='".$self->aws_access_key_id()."'] and no vivify_bucket option");
     }
-    return $self->s3_client()->create_bucket( name => $bucket_name );
+    return $self->s3_client()->create_bucket( name => $bucket_name,
+                                              ( $self->location_constraint() ? ( location_constraint => $self->location_constraint() ) : () )
+                                          );
 }
 
 sub _expiry_ymd{
@@ -214,8 +239,15 @@ sub store{
                                             content_type => 'text/plain; charset=utf-8',
                                             $self->acl_short() ? ( acl_short => $self->acl_short() ) : (),
                                             $expires_ymd ? ( expires => $expires_ymd ) : (),
-                                          );
-    $s3object->put(Encode::encode_utf8($big_message));
+                                        );
+    eval{
+        $s3object->put(Encode::encode_utf8($big_message));
+    };
+    if( my $err = $@ ){
+        $LOGGER->error("Log chunk storing error: $err");
+        warn "Log chunk storing error: $err";
+        exit(1);
+    }
     if( $self->log_auth_links() ){
         $LOGGER->info("Stored log chunk in ".$s3object->query_string_authentication_uri());
     }
