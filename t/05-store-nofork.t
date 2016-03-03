@@ -25,6 +25,7 @@ log4perl.appender.Chunk.store_args.location_constraint=EU
 log4perl.appender.Chunk.store_args.aws_access_key_id=|.$access_key_id.q|
 log4perl.appender.Chunk.store_args.aws_secret_access_key=|.$access_key_secret.q|
 log4perl.appender.Chunk.store_args.expires_in_days=3
+log4perl.appender.Chunk.store_args.with_forking=0
 log4perl.appender.Chunk.store_args.acl_short=public-read
 log4perl.appender.Chunk.store_args.retry=1
 log4perl.appender.Chunk.store_args.vivify_bucket=1
@@ -41,6 +42,7 @@ ok( $store->s3_client() , "Ok got s3 client");
 ok( $store->_expiry_ymd() , "Ok got expiry YMD");
 ok( $store->acl_short() , "Ok got acl_short");
 is( $store->host(), 's3-eu-west-1.amazonaws.com' );
+is( $store->with_forking() , 0 );
 is( $store->location_constraint(),  'EU' );
 
 my $clone = $store->clone();
@@ -49,6 +51,7 @@ ok( $clone->_expiry_ymd() , "Ok got expiry YMD");
 ok( $clone->acl_short() , "Ok got acl_short");
 is( $clone->host(), 's3-eu-west-1.amazonaws.com' );
 is( $clone->location_constraint(),  'EU' );
+is( $clone->with_forking() , 0 );
 
 
 SKIP:{
@@ -61,9 +64,9 @@ Test buckets will be prefixed with JETEVE-FullMetalBucket-
 
 /, 2 ;
     }
-    # This forks.
+    # This SHOULD NOT fork.
     ok( $store->store('a_key' , 'Some big content'), "Ok can store stuff");
-    sleep(5);
+
     ok( my $bucket = $store->bucket() );
 
     # Do some cleanup:

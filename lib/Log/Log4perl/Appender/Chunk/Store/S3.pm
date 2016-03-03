@@ -34,6 +34,8 @@ has 'retry' => ( is => 'ro' , isa => 'Bool' , required => 1 , default => 1);
 
 has 'log_auth_links' => ( is => 'ro' , isa => 'Bool' , required => 1, default => 0);
 
+has 'with_forking' => ( is => 'ro', isa => 'Bool', default => 1 );
+
 
 # Single object properties.
 
@@ -112,7 +114,16 @@ Mandatory. Your S3 Secret access key. See L<Net::Amazon::S3>
 
 Optional. See L<Net::Amazon::S3>
 
-Defaults to true.
+Defaults to true (1).
+
+=item with_forking
+
+Optional. Causes this to (double) fork before actually storing stuff to S3, so your processes
+are not slowed down by slow transfers to S3. On highly loaded machines, this
+could actually be slower than not forking at all. So set this to false (0) on higly
+loaded machines.
+
+Defaults to true (1).
 
 =item acl_short
 
@@ -170,7 +181,8 @@ sub clone{
                              vivify_bucket => $self->vivify_bucket(),
                              log_auth_links => $self->log_auth_links(),
                              host => $self->host(),
-                             location_constraint => $self->location_constraint()
+                             location_constraint => $self->location_constraint(),
+                             with_forking => $self->with_forking()
                             });
 }
 
@@ -214,25 +226,26 @@ See superclass L<Log::Log4perl::Appender::Chunk::Store>
 sub store{
     my ($self, $chunk_id, $big_message) = @_;
 
+    if( $self->with_forking() ){
 
-    defined(my $child = fork()) or confess("Cannot fork: $!");
-    if( $child ){
-        ## We are the main parent. We wait for the child.
-        waitpid($child, 0);
-        return 1;
+        defined(my $child = fork()) or confess("Cannot fork: $!");
+        if( $child ){
+            ## We are the main parent. We wait for the child.
+            waitpid($child, 0);
+            return 1;
+        }
+
+        # We are the child
+        # Double fork to avoid zombies.
+        defined( my $grand_child = fork() ) or confess("Cannot double fork: $!");
+        if( $grand_child ){
+            # We are the child but we dont wait for
+            # our grand child. It will be picked up by init
+            exit(0);
+        }
+        # Grand child. We can do stuff.
+        $self = $self->clone();
     }
-
-    # We are the child
-    # Double fork to avoid zombies.
-    defined( my $grand_child = fork() ) or confess("Cannot double fork: $!");
-    if( $grand_child ){
-        # We are the child but we dont wait for
-        # our grand child. It will be picked up by init
-        exit(0);
-    }
-
-    # Grand child. We can do stuff.
-    $self = $self->clone();
 
     my $expires_ymd = $self->_expiry_ymd();
     my $s3object = $self->bucket()->object( key => $chunk_id,
@@ -251,7 +264,12 @@ sub store{
     if( $self->log_auth_links() ){
         $LOGGER->info("Stored log chunk in ".$s3object->query_string_authentication_uri());
     }
-    exit(0);
+
+    if( $self->with_forking() ){
+        exit(0);
+    }else{
+        return 1;
+    }
 }
 
 __PACKAGE__->meta->make_immutable();
