@@ -16,6 +16,9 @@ use Log::Log4perl::MDC;
 # ENTERCHUNK: Entering a chunk from an OFFCHUNK state
 # NEWCHUNK: Entering a NEW chunk from an INCHUNK state
 # LEAVECHUNK: Leaving a chunk from an INCHUNK state
+
+has '_creator_pid' => ( is => 'ro', isa => 'Int', required => 1 , default => sub{  $$ ; } );
+
 has 'state' => ( is => 'rw' , isa => 'Str', default => 'OFFCHUNK' );
 has 'previous_chunk' => ( is => 'rw' , isa => 'Maybe[Str]' , default => undef , writer => '_set_previous_chunk' );
 has 'messages_buffer' => ( is => 'rw' , isa => 'ArrayRef[Str]' , default => sub{ []; });
@@ -123,6 +126,8 @@ sub _on_LEAVECHUNK{
 
 sub DEMOLISH{
     my ($self) = @_;
+    unless( $self->_creator_pid() == $$ ){ return ; }
+
     if( my $chunk_id = $self->previous_chunk() ){
         # Simulate transitioning to an non chunked section of the log.
         Log::Log4perl::MDC->put($self->chunk_marker() , undef );

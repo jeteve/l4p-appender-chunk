@@ -3,6 +3,9 @@ use Test::More;
 
 use Log::Log4perl;
 
+use File::Temp;
+use File::Slurp;
+
 my $conf = q|
 log4perl.rootLogger=TRACE, Chunk
 
@@ -65,6 +68,20 @@ is( $ca->state() , 'LEAVECHUNK');
 $LOGGER->info("Left chunk context again");
 is( $ca->state() , 'OFFCHUNK');
 
-ok(1);
+
+my ( $fh , $child_file ) = File::Temp::tempfile();
+
+if( my $child = fork() ){
+    waitpid( $child , 0 );
+}else{
+    File::Slurp::write_file( $child_file , $ca->_creator_pid() );
+    exit(0);
+}
+
+my $ip_reported_by_child = File::Slurp::read_file( $child_file );
+
+is( $ip_reported_by_child ,  $$ , "In the child, the IP of the Appender creator is the same as this main process");
 
 done_testing();
+
+
