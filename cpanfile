@@ -6,6 +6,7 @@ requires 'DateTime';
 requires 'Log::Log4perl', '>=1.42';
 requires 'Moose', '>=2.1005';
 
+test_requires 'File::Path';
 test_requires 'File::Temp';
 test_requires 'File::Slurp';
 test_requires 'Test::More';
