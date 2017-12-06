@@ -30,10 +30,14 @@ sub store{
             return;
         }
     }
-    $LOGGER->trace("Storing chunk ".$chunk_id);
-    open my $FH, '>', File::Spec->catfile($logging_dir, $chunk_id);
-    print $FH $big_message;
-    close $FH;
+    my $chunk_log_file = File::Spec->catfile($logging_dir, $chunk_id);
+    $LOGGER->info("Stored log chunk in $chunk_log_file");
+
+    File::Slurp::write_file(
+        $chunk_log_file,
+        {binmode => ':utf8'},
+        $big_message
+    );
     return 1;
 }
 
